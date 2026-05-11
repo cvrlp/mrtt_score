@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticket Score Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F4F5F7;
+    color: #172B4D;
+    padding: 20px;
+    font-size: 14px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #DFE1E6;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+  }
+
+  /* Level selector */
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .level-btn {
+    border: 2px solid #DFE1E6;
+    border-radius: 6px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.15s;
+    line-height: 1.3;
+  }
+  .level-btn:hover { border-color: #B3D4FF; background: #DEEBFF; }
+  .level-btn .lb-name { font-size: 12px; font-weight: 600; display: block; }
+  .level-btn .lb-pts  { font-size: 11px; color: #6B778C; display: block; margin-top: 2px; }
+
+  .level-btn.active-simple       { border-color: #00875A; background: #E3FCEF; }
+  .level-btn.active-moderate     { border-color: #0052CC; background: #DEEBFF; }
+  .level-btn.active-intermediate { border-color: #5243AA; background: #EAE6FF; }
+  .level-btn.active-complex      { border-color: #FF8B00; background: #FFFAE6; }
+  .level-btn.active-major        { border-color: #BF2600; background: #FFEBE6; }
+
+  /* Inputs */
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 4px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B778C;
+    margin-bottom: 5px;
+  }
+
+  .field .hint {
+    font-size: 11px;
+    color: #97A0AF;
+    margin-top: 3px;
+  }
+
+  .field input[type=number] {
+    width: 100%;
+    border: 2px solid #DFE1E6;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #172B4D;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .field input::-webkit-inner-spin-button,
+  .field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .field input:focus { border-color: #0052CC; }
+
+  /* Breakdown */
+  .breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .mult-box {
+    background: #F4F5F7;
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .mult-box .mb-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B778C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .mult-box .mb-val {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .mult-box .mb-detail {
+    font-size: 11px;
+    color: #6B778C;
+    line-height: 1.5;
+  }
+
+  /* Multiplier bar */
+  .mult-bar-wrap {
+    height: 5px;
+    border-radius: 3px;
+    background: #DFE1E6;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .mult-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    position: absolute;
+    left: 0;
+    transition: width 0.25s ease;
+  }
+
+  /* Score output */
+  .score-out {
+    border-radius: 8px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s;
+    border: 2px solid transparent;
+  }
+
+  .score-left .so-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin-bottom: 3px;
+  }
+  .score-left .so-num {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .score-left .so-sub {
+    font-size: 12px;
+    opacity: 0.65;
+    margin-top: 4px;
+  }
+
+  .score-right {
+    text-align: right;
+    font-size: 12px;
+    line-height: 1.9;
+    opacity: 0.75;
+  }
+  .score-right span { display: block; }
+
+  /* Color themes for score */
+  .theme-simple       { background: #E3FCEF; border-color: #79F2C0; color: #006644; }
+  .theme-moderate     { background: #DEEBFF; border-color: #B3D4FF; color: #0747A6; }
+  .theme-intermediate { background: #EAE6FF; border-color: #C0B6F2; color: #403294; }
+  .theme-complex      { background: #FFFAE6; border-color: #FFF0B3; color: #172B4D; }
+  .theme-major        { background: #FFEBE6; border-color: #FFBDAD; color: #BF2600; }
+  .theme-none         { background: #F4F5F7; border-color: #DFE1E6; color: #6B778C; }
+
+  .no-score-msg { font-size: 13px; opacity: 0.7; margin-top: 6px; }
+
+  /* Formula trace */
+  .trace {
+    background: #F4F5F7;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px;
+    color: #172B4D;
+    line-height: 2;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .mult-speed  { color: #0052CC; }
+  .mult-thread { color: #00875A; }
+  .mult-combo  { color: #403294; }
+  .mult-score  { font-weight: 700; }
+
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: #97A0AF;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-title">Complexity Level</div>
+  <div class="level-grid">
+    <button class="level-btn" data-level="simple" onclick="setLevel('simple')">
+      <span class="lb-name">Simple</span>
+      <span class="lb-pts">1 pt · 0.5 hrs</span>
+    </button>
+    <button class="level-btn" data-level="moderate" onclick="setLevel('moderate')">
+      <span class="lb-name">Moderate</span>
+      <span class="lb-pts">2 pts · 2 hrs</span>
+    </button>
+    <button class="level-btn active-intermediate" data-level="intermediate" onclick="setLevel('intermediate')">
+      <span class="lb-name">Intermediate</span>
+      <span class="lb-pts">4 pts · 8 hrs</span>
+    </button>
+    <button class="level-btn" data-level="complex" onclick="setLevel('complex')">
+      <span class="lb-name">Complex</span>
+      <span class="lb-pts">8 pts · 32 hrs</span>
+    </button>
+    <button class="level-btn" data-level="major" onclick="setLevel('major')">
+      <span class="lb-name">Major</span>
+      <span class="lb-pts">12 pts · 72 hrs</span>
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Actual Values</div>
+  <div class="input-row">
+    <div class="field">
+      <label for="inp-hrs">Hours logged</label>
+      <input type="number" id="inp-hrs" min="0" step="0.5" value="6" placeholder="0">
+      <div class="hint">Expected: <span id="hint-hrs">8</span> hrs — leave blank for NO_SCORE</div>
+    </div>
+    <div class="field">
+      <label for="inp-thr">Review threads</label>
+      <input type="number" id="inp-thr" min="0" step="1" value="2" placeholder="0">
+      <div class="hint">Expected: <span id="hint-thr">4</span> — enter 0 for auto 1.5×</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Multiplier Breakdown</div>
+  <div class="breakdown">
+    <div class="mult-box">
+      <div class="mb-label">⚡ Speed multiplier</div>
+      <div class="mb-val mult-speed" id="out-sm">1.33×</div>
+      <div class="mb-detail" id="out-sm-detail">8 / 6 = 1.33 → clamped</div>
+      <div class="mult-bar-wrap">
+        <div class="mult-bar-fill" id="bar-sm" style="width:55%;background:#0052CC;"></div>
+      </div>
+    </div>
+    <div class="mult-box">
+      <div class="mb-label">💬 Thread multiplier</div>
+      <div class="mb-val mult-thread" id="out-tm">1.50×</div>
+      <div class="mb-detail" id="out-tm-detail">4 / 2 = 2.00 → capped at 1.5</div>
+      <div class="mult-bar-wrap">
+        <div class="mult-bar-fill" id="bar-tm" style="width:100%;background:#00875A;"></div>
+      </div>
+    </div>
+  </div>
+  <div id="score-box" class="score-out theme-intermediate">
+    <div class="score-left">
+      <div class="so-label">Total score</div>
+      <div class="so-num" id="out-score">6</div>
+      <div class="so-sub" id="out-sub">base 4 × combined 1.42</div>
+    </div>
+    <div class="score-right" id="out-weights">
+      <span>Speed weight: 50%</span>
+      <span>Thread weight: 50%</span>
+      <span>Combined: 1.42</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Formula Trace</div>
+  <div class="trace" id="out-trace">
+<span class="mult-speed">speedMult</span>  = clamp(8 / 6, 0.5, 1.5)   = <span class="mult-speed">1.33×</span>
+<span class="mult-thread">threadMult</span> = clamp(4 / 2, 0.5, 1.5)   = <span class="mult-thread">1.50×</span>
+<span class="mult-combo">combined</span>   = (1.33 × 0.50) + (1.50 × 0.50) = <span class="mult-combo">1.42</span>
+<span class="mult-score">score</span>      = round(4 × 1.42) = <span class="mult-score">6</span>
+  </div>
+</div>
+
+<div class="footer">Ticket Scoring System — values update live as you type</div>
+
+<script>
+const LEVELS = {
+  simple:       { base: 1,  expHrs: 0.5, expThr: 1,  sw: 0.40, tw: 0.60 },
+  moderate:     { base: 2,  expHrs: 2,   expThr: 2,  sw: 0.45, tw: 0.55 },
+  intermediate: { base: 4,  expHrs: 8,   expThr: 4,  sw: 0.50, tw: 0.50 },
+  complex:      { base: 8,  expHrs: 32,  expThr: 8,  sw: 0.55, tw: 0.45 },
+  major:        { base: 12, expHrs: 72,  expThr: 12, sw: 0.60, tw: 0.40 },
+};
+
+let currentLevel = 'intermediate';
+
+function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
+function fmt(n, d=2) { return n.toFixed(d); }
+function multPct(m) { return ((m - 0.5) / 1.0 * 100).toFixed(1) + '%'; }
+
+function setLevel(key) {
+  currentLevel = key;
+  document.querySelectorAll('.level-btn').forEach(b => {
+    b.className = 'level-btn' + (b.dataset.level === key ? ' active-' + key : '');
+  });
+  const lv = LEVELS[key];
+  document.getElementById('hint-hrs').textContent = lv.expHrs;
+  document.getElementById('hint-thr').textContent = lv.expThr;
+  compute();
+}
+
+function compute() {
+  const lv = LEVELS[currentLevel];
+  const hrsVal = document.getElementById('inp-hrs').value;
+  const thrVal = document.getElementById('inp-thr').value;
+  const actualHrs = parseFloat(hrsVal);
+  const actualThr = parseInt(thrVal);
+
+  const scoreBox   = document.getElementById('score-box');
+  const outScore   = document.getElementById('out-score');
+  const outSub     = document.getElementById('out-sub');
+  const outWeights = document.getElementById('out-weights');
+  const outTrace   = document.getElementById('out-trace');
+  const outSm      = document.getElementById('out-sm');
+  const outSmD     = document.getElementById('out-sm-detail');
+  const outTm      = document.getElementById('out-tm');
+  const outTmD     = document.getElementById('out-tm-detail');
+  const barSm      = document.getElementById('bar-sm');
+  const barTm      = document.getElementById('bar-tm');
+
+  if (!hrsVal || isNaN(actualHrs) || actualHrs <= 0) {
+    scoreBox.className = 'score-out theme-none';
+    outScore.textContent = '—';
+    outSub.textContent = 'NO_SCORE — log time to compute';
+    outWeights.innerHTML = '';
+    outSm.textContent = '—';  outSmD.textContent = 'No hours logged';
+    outTm.textContent = '—';  outTmD.textContent = '';
+    barSm.style.width = '0%'; barTm.style.width = '0%';
+    outTrace.innerHTML = '<span style="color:#97A0AF">No hours logged — score is NO_SCORE</span>';
+    return;
+  }
+
+  const thr = isNaN(actualThr) ? 0 : Math.max(0, actualThr);
+  const rawSm = lv.expHrs / actualHrs;
+  const sm = clamp(rawSm, 0.5, 1.5);
+  const rawTm = thr > 0 ? lv.expThr / thr : Infinity;
+  const tm = thr === 0 ? 1.5 : clamp(rawTm, 0.5, 1.5);
+  const combined = sm * lv.sw + tm * lv.tw;
+  const score = Math.round(lv.base * combined);
+
+  scoreBox.className = 'score-out theme-' + currentLevel;
+  outScore.textContent = score;
+  outSub.textContent = `base ${lv.base} × combined ${fmt(combined)}`;
+  outWeights.innerHTML = `<span>Speed weight: ${Math.round(lv.sw*100)}%</span><span>Thread weight: ${Math.round(lv.tw*100)}%</span><span>Combined: ${fmt(combined)}</span>`;
+
+  outSm.textContent = fmt(sm) + '×';
+  const smNote = rawSm < 0.5 ? '→ clamped to 0.5 (min)' : rawSm > 1.5 ? '→ capped at 1.5 (max)' : '→ within range';
+  outSmD.textContent = `${lv.expHrs} / ${actualHrs} = ${fmt(rawSm)} ${smNote}`;
+  barSm.style.width = multPct(sm);
+
+  outTm.textContent = fmt(tm) + '×';
+  if (thr === 0) {
+    outTmD.textContent = '0 threads → auto set to 1.5 (best)';
+  } else {
+    const tmNote = rawTm < 0.5 ? '→ clamped to 0.5 (min)' : rawTm > 1.5 ? '→ capped at 1.5 (max)' : '→ within range';
+    outTmD.textContent = `${lv.expThr} / ${thr} = ${fmt(rawTm)} ${tmNote}`;
+  }
+  barTm.style.width = multPct(tm);
+
+  const smLine = thr === 0
+    ? `<span class="mult-thread">threadMult</span> = 1.50×  (0 threads → auto best)`
+    : `<span class="mult-thread">threadMult</span> = clamp(${lv.expThr} / ${thr}, 0.5, 1.5) = <span class="mult-thread">${fmt(tm)}×</span>`;
+
+  outTrace.innerHTML =
+    `<span class="mult-speed">speedMult</span>  = clamp(${lv.expHrs} / ${actualHrs}, 0.5, 1.5) = <span class="mult-speed">${fmt(sm)}×</span>\n` +
+    smLine + '\n' +
+    `<span class="mult-combo">combined</span>   = (${fmt(sm)} × ${fmt(lv.sw,2)}) + (${fmt(tm)} × ${fmt(lv.tw,2)}) = <span class="mult-combo">${fmt(combined)}</span>\n` +
+    `<span class="mult-score">score</span>      = round(${lv.base} × ${fmt(combined)}) = <span class="mult-score">${score}</span>`;
+}
+
+document.getElementById('inp-hrs').addEventListener('input', compute);
+document.getElementById('inp-thr').addEventListener('input', compute);
+compute();
+</script>
+</body>
+</html>
